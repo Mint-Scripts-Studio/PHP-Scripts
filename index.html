@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mintscripts — Service Status</title>
+<style>
+  :root{
+    --bg: #0a0d0f;
+    --bg-card: #12171a;
+    --bg-card-2: #161c20;
+    --line: #232b2f;
+    --text: #e7ecee;
+    --muted: #7d8b90;
+    --mint: #2ee6a6;
+    --amber: #ff9a3c;
+    --amber-dim: rgba(255,154,60,0.12);
+    --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,154,60,0.08), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(46,230,166,0.06), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+    padding:56px 24px 80px;
+  }
+  .top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:48px;
+  }
+  .brand{
+    font-family:var(--mono);
+    font-size:15px;
+    letter-spacing:0.02em;
+    color:var(--text);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .brand .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--mint);
+    box-shadow:0 0 0 3px rgba(46,230,166,0.15);
+  }
+  .langsw{
+    display:flex;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+  .langsw button{
+    background:transparent;
+    border:none;
+    color:var(--muted);
+    padding:7px 12px;
+    cursor:pointer;
+    font-family:var(--mono);
+    font-size:12px;
+    transition:.15s;
+  }
+  .langsw button.active{
+    background:var(--bg-card-2);
+    color:var(--text);
+  }
+  .langsw button:hover{color:var(--text);}
+
+  .status-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    background:var(--amber-dim);
+    border:1px solid rgba(255,154,60,0.35);
+    color:var(--amber);
+    font-family:var(--mono);
+    font-size:12.5px;
+    letter-spacing:0.03em;
+    padding:7px 14px 7px 11px;
+    border-radius:100px;
+    margin-bottom:28px;
+  }
+  .status-badge .pulse{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--amber);
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1; box-shadow:0 0 0 0 rgba(255,154,60,0.5);}
+    50%{opacity:0.6; box-shadow:0 0 0 5px rgba(255,154,60,0);}
+  }
+
+  h1{
+    font-family:var(--sans);
+    font-weight:700;
+    font-size:clamp(28px,4.5vw,38px);
+    line-height:1.15;
+    letter-spacing:-0.01em;
+    margin:0 0 16px;
+  }
+  .lede{
+    color:var(--muted);
+    font-size:16.5px;
+    line-height:1.65;
+    max-width:56ch;
+    margin:0 0 40px;
+  }
+
+  .card{
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:26px 26px 22px;
+    margin-bottom:20px;
+  }
+  .card h2{
+    font-family:var(--mono);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--muted);
+    margin:0 0 16px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .card h2::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+  .card p{
+    font-size:15px;
+    line-height:1.7;
+    color:#c7cfd2;
+    margin:0 0 12px;
+  }
+  .card p:last-child{margin-bottom:0;}
+  .card strong{color:var(--text); font-weight:600;}
+
+  .log{
+    font-family:var(--mono);
+    font-size:13px;
+    line-height:2.1;
+  }
+  .log .row{
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    color:#aeb8bc;
+  }
+  .log .t{
+    color:var(--muted);
+    flex-shrink:0;
+    width:64px;
+  }
+  .log .row.ok .marker{color:var(--mint);}
+  .log .row.warn .marker{color:var(--amber);}
+  .log .marker{margin-right:2px;}
+
+  .grid2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  @media (max-width:600px){
+    .grid2{grid-template-columns:1fr;}
+  }
+  .stat{
+    background:var(--bg-card-2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+  }
+  .stat .label{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    margin-bottom:6px;
+  }
+  .stat .value{
+    font-size:15px;
+    color:var(--text);
+    font-weight:600;
+  }
+  .stat .value.ok{color:var(--mint);}
+
+  .cta{
+    display:flex;
+    gap:12px;
+    margin-top:32px;
+    flex-wrap:wrap;
+  }
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    padding:13px 20px;
+    border-radius:10px;
+    text-decoration:none;
+    font-size:14.5px;
+    font-weight:600;
+    transition:.15s;
+  }
+  .btn-primary{
+    background:var(--mint);
+    color:#062318;
+  }
+  .btn-primary:hover{
+    background:#3ffcbb;
+  }
+  .btn-ghost{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--text);
+  }
+  .btn-ghost:hover{
+    border-color:#3a444a;
+    background:var(--bg-card-2);
+  }
+
+  .foot{
+    margin-top:56px;
+    padding-top:24px;
+    border-top:1px solid var(--line);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
+    color:var(--muted);
+    font-family:var(--mono);
+    font-size:12px;
+  }
+
+  [data-lang]{display:none;}
+  html[data-active="ru"] [data-lang="ru"]{display:block;}
+  html[data-active="ru"] span[data-lang="ru"]{display:inline;}
+  html[data-active="en"] [data-lang="en"]{display:block;}
+  html[data-active="en"] span[data-lang="en"]{display:inline;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand"><span class="dot"></span> mintscripts.net</div>
+    <div class="langsw">
+      <button id="btn-ru">RU</button>
+      <button id="btn-en">EN</button>
+    </div>
+  </div>
+
+  <div class="status-badge"><span class="pulse"></span>
+    <span data-lang="ru">Работаем на резервном сервере</span>
+    <span data-lang="en">Running on backup server</span>
+  </div>
+
+  <div data-lang="ru">
+    <h1>Основной сервер временно недоступен</h1>
+    <p class="lede">Из-за аномальной жары в дата-центре в Нидерландах произошло возгорание оборудования. Мы уже перенесли сайт на резервный хостинг — сервис снова доступен, а студия как обычно работает над проектами и заказами.</p>
+  </div>
+  <div data-lang="en">
+    <h1>Our main server is temporarily down</h1>
+    <p class="lede">A record heatwave caused a fire in the equipment at our data center in the Netherlands. We've already moved the site to backup hosting — the service is back up, and the studio is working on projects and orders as usual.</p>
+  </div>
+
+  <div class="card">
+    <h2><span data-lang="ru">Что произошло</span><span data-lang="en">What happened</span></h2>
+    <div data-lang="ru">
+      <p>Экстремальная температура в регионе размещения нашего провайдера привела к перегреву серверного оборудования и последующему возгоранию в одном из машинных залов дата-центра. <strong>Основной сервер mintscripts.net вышел из строя</strong>, доступ к сайту был прерван.</p>
+      <p>Никакого взлома, атаки или утечки данных — причина чисто техническая и связана с аварией у хостинг-провайдера, а не с нашей инфраструктурой или безопасностью проекта.</p>
+    </div>
+    <div data-lang="en">
+      <p>Extreme heat in the region hosting our provider caused the server hardware to overheat, leading to a fire in one of the data center's server rooms. <strong>The main mintscripts.net server went offline</strong> and the site became unreachable.</p>
+      <p>This was not a hack, attack, or data leak — the cause is purely a hardware/infrastructure incident at the hosting provider, unrelated to our own security or the project's data.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span data-lang="ru">Текущий статус</span><span data-lang="en">Current status</span></h2>
+    <div class="log">
+      <div class="row warn"><span class="t">14:02</span><span><span class="marker">✕</span> <span data-lang="ru">Основной сервер (Нидерланды) — недоступен</span><span data-lang="en">Primary server (Netherlands) — offline</span></span></div>
+      <div class="row ok"><span class="t">14:47</span><span><span class="marker">✓</span> <span data-lang="ru">Резервный хостинг подключён и настроен</span><span data-lang="en">Backup hosting connected and configured</span></span></div>
+      <div class="row ok"><span class="t">15:10</span><span><span class="marker">✓</span> <span data-lang="ru">mintscripts.net снова доступен</span><span data-lang="en">mintscripts.net is back online</span></span></div>
+      <div class="row ok"><span class="t">now</span><span><span class="marker">✓</span> <span data-lang="ru">Студия работает в штатном режиме</span><span data-lang="en">Studio operating as normal</span></span></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="stat">
+      <div class="label" data-lang="ru">Сайт</div>
+      <div class="label" data-lang="en">Website</div>
+      <div class="value ok" data-lang="ru">Работает (резерв)</div>
+      <div class="value ok" data-lang="en">Online (backup)</div>
+    </div>
+    <div class="stat">
+      <div class="label" data-lang="ru">Студия / заказы</div>
+      <div class="label" data-lang="en">Studio / orders</div>
+      <div class="value ok" data-lang="ru">В штатном режиме</div>
+      <div class="value ok" data-lang="en">Operating as normal</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h2><span data-lang="ru">Данные и заказы</span><span data-lang="en">Data & orders</span></h2>
+    <div data-lang="ru">
+      <p>Все базы данных, скрипты и заказы клиентов <strong>не пострадали</strong> — резервные копии были развёрнуты на новом хостинге без потерь. Если у вас открыт заказ или тикет, он в работе, как и прежде.</p>
+    </div>
+    <div data-lang="en">
+      <p>All databases, scripts, and client orders are <strong>safe and unaffected</strong> — backups were deployed to the new hosting without any loss. If you have an open order or ticket, it's being handled as usual.</p>
+    </div>
+  </div>
+
+  <div data-lang="ru">
+    <p style="color:var(--muted); font-size:14.5px; line-height:1.7; margin-top:8px;">Если у вас остались вопросы, срочный заказ или нужна помощь прямо сейчас — напишите нам в Telegram, мы на связи.</p>
+  </div>
+  <div data-lang="en">
+    <p style="color:var(--muted); font-size:14.5px; line-height:1.7; margin-top:8px;">If you have questions, an urgent order, or need help right now — message us on Telegram, we're online.</p>
+  </div>
+
+  <div class="cta">
+    <a class="btn btn-primary" href="https://t.me/mintscripts" target="_blank" rel="noopener">
+      <span data-lang="ru">Написать в Telegram</span>
+      <span data-lang="en">Message us on Telegram</span>
+    </a>
+    <a class="btn btn-ghost" href="https://t.me/mintscripts_studio" target="_blank" rel="noopener">
+      <span data-lang="ru">Канал студии</span>
+      <span data-lang="en">Studio channel</span>
+    </a>
+  </div>
+
+  <div class="foot">
+    <span>mintscripts.net</span>
+    <span data-lang="ru">Статус обновляется вручную командой mintscripts</span>
+    <span data-lang="en">Status updated manually by the mintscripts team</span>
+  </div>
+
+</div>
+
+<script>
+  function setLang(lang){
+    document.documentElement.setAttribute('data-active', lang);
+    document.documentElement.setAttribute('lang', lang);
+    document.getElementById('btn-ru').classList.toggle('active', lang==='ru');
+    document.getElementById('btn-en').classList.toggle('active', lang==='en');
+    try{ localStorage.setItem('ms_lang', lang); }catch(e){}
+  }
+  var saved = null;
+  try{ saved = localStorage.getItem('ms_lang'); }catch(e){}
+  var browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+  var initial = saved || (browserLang.indexOf('ru') === 0 ? 'ru' : 'en');
+  setLang(initial);
+  document.getElementById('btn-ru').addEventListener('click', function(){ setLang('ru'); });
+  document.getElementById('btn-en').addEventListener('click', function(){ setLang('en'); });
+</script>
+</body>
+</html>
